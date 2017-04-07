@@ -1,0 +1,58 @@
+---
+title: "TFI"
+author: "Athni Vempaty"
+date: "April 7, 2017"
+output: html_document
+---
+Loading the required libraries
+```{r}
+library(caret)
+library(randomForest)
+library(ggplot2)
+library(lda)
+
+```
+
+Saving the train and test into 'train' and 'test' resp.
+```{r}
+train <- read.csv("train.csv")
+test <- read.csv("test.csv")
+```
+
+Cleaning up the data
+```{r}
+#Removing the first few columns as they wouldnt add to prediction
+train <- train[, 6:43]
+ID <- test[,1]
+test <- test[,6:42]
+```
+
+Pre-Processing
+```{r}
+#Creating a train control with cross validation of 3 folds
+control <- trainControl(method="repeatedcv", repeats=3, number=10)
+
+```
+
+Model Selection
+```{r}
+#One out of the following models will be picked: Decision Tree, Random Forests and K Nearest Neighbours
+modelTree <- train(revenue~., data=train, method="rpart", trControl=control)
+modelRF <- train(revenue~., data=train, method="rf", trControl=control)
+modelKNN <- train(revenue~., data=train, method="knn", trControl=control)
+```
+
+Comparing the models
+```{r}
+results <- resamples(list(TREE=modelTree, RF= modelRF, KNN= modelKNN))
+summary(results)
+```
+
+The lowest mean of RMSE is considered the best model, either of Random Forest or KNN can be picked. Finalizing KNN for prediction
+
+```{r}
+#Final prediction
+final <- predict(modelKNN, test)
+finaloutput <- data.frame(Id=ID, Prediction=final)
+write.csv(finaloutput, "predictions.csv")
+```
